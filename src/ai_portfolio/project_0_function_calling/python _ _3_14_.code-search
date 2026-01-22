@@ -1,0 +1,10 @@
+# Query: python = ">=3.14"\n
+# ContextLines: 1
+
+1 result - 1 file
+
+pyproject.toml:
+   8  license = {text = "MIT"}
+   9: requires-python = ">=3.11"
+  10: 
+  10  dependencies = [
