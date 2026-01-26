@@ -8,9 +8,10 @@
 |-------|-------|
 | **Project Name** | AutoRAG (Autonomous Retrieval-Augmented Generation) |
 | **Document Type** | Implementation Strategy |
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Last Updated** | January 25, 2026 |
 | **Status** | Final |
+| **Changes** | Updated from FAISS to Chroma for vector database |
 
 ---
 
@@ -32,7 +33,7 @@ The AutoRAG implementation strategy is designed to deliver a fully functional Re
 *   Set up Git repository and establish version control workflow
 *   Configure OpenAI API credentials and test connectivity
 *   Create project directory structure matching the architecture design
-*   Install core dependencies: LangChain, FAISS, CrewAI, FastAPI, SQLite3
+*   Install core dependencies: LangChain, Chroma, CrewAI, FastAPI, SQLite3
 
 **Deliverables:**
 
@@ -58,7 +59,7 @@ The AutoRAG implementation strategy is designed to deliver a fully functional Re
 *   Implement Document Loader module to read text files from a designated knowledge base directory
 *   Build Text Splitter to chunk documents into manageable segments (512-1024 tokens)
 *   Integrate OpenAI Embedding Model to generate vector embeddings for each chunk
-*   Implement FAISS Vector Database initialization and persistence
+*   Implement Chroma Vector Database initialization with automatic embedding generation
 *   Create data ingestion script with error handling and logging
 *   Test with sample documents (e.g., technical documentation, FAQs)
 
@@ -66,15 +67,22 @@ The AutoRAG implementation strategy is designed to deliver a fully functional Re
 
 *   `data_ingestion.py` - Complete ingestion pipeline script
 *   Sample knowledge base directory with test documents
-*   FAISS index file (persisted locally)
+*   Chroma vector store with persisted embeddings
 *   Logging output showing successful ingestion
 
 **Success Criteria:**
 
 *   Successfully ingests 10+ documents without errors
-*   FAISS index contains embeddings for all document chunks
+*   Chroma vector store contains embeddings for all document chunks
 *   Ingestion process is repeatable and idempotent
 *   Performance is acceptable (< 5 minutes for 100 documents)
+
+**Chroma-Specific Implementation Details:**
+
+*   Use LangChain's Chroma integration for seamless vector store management
+*   Configure persistent storage directory for embeddings
+*   Leverage automatic embedding generation via OpenAI API
+*   Implement collection-based organization for logical document grouping
 
 ---
 
@@ -84,7 +92,7 @@ The AutoRAG implementation strategy is designed to deliver a fully functional Re
 
 **Key Activities:**
 
-*   Implement Retriever component using FAISS for similarity search
+*   Implement Retriever component using Chroma for similarity search
 *   Build Generator component using OpenAI LLM with context augmentation
 *   Create RAG orchestrator that combines retrieval and generation
 *   Implement prompt engineering for high-quality responses
@@ -104,6 +112,13 @@ The AutoRAG implementation strategy is designed to deliver a fully functional Re
 *   Retrieved context is relevant to the query
 *   Generated responses are coherent and accurate
 *   Latency is acceptable (< 3 seconds per query)
+
+**Chroma-Specific Implementation Details:**
+
+*   Use Chroma's `as_retriever()` method for LangChain integration
+*   Configure similarity search with appropriate `k` parameter (typically 5-10)
+*   Implement metadata filtering for advanced retrieval scenarios
+*   Leverage Chroma's built-in similarity scoring for relevance assessment
 
 ---
 
@@ -175,7 +190,7 @@ The AutoRAG implementation strategy is designed to deliver a fully functional Re
 *   Conduct integration testing across the full pipeline
 *   Perform load testing and optimize performance
 *   Test edge cases and error scenarios
-*   Optimize embeddings and retrieval performance
+*   Optimize Chroma retrieval performance through parameter tuning
 *   Complete documentation and create usage guides
 
 **Deliverables:**
@@ -205,7 +220,7 @@ The AutoRAG implementation strategy is designed to deliver a fully functional Re
 | **Agent Framework** | CrewAI | Lightweight, intuitive for autonomous agents |
 | **LLM** | OpenAI GPT-4 | High-quality responses, reliable API |
 | **Embeddings** | OpenAI Embeddings | Consistent with LLM, high-quality vectors |
-| **Vector DB** | FAISS | Local, fast, free, suitable for MVP |
+| **Vector DB** | Chroma | Local, fast, free, Python 3.14+ compatible, LangChain-native |
 | **SQL DB** | SQLite | Serverless, no setup required, sufficient for MVP |
 | **API Framework** | FastAPI | Modern, fast, automatic API documentation |
 | **CLI** | argparse | Built-in, no dependencies, sufficient for MVP |
@@ -218,6 +233,12 @@ The AutoRAG implementation strategy is designed to deliver a fully functional Re
 *   **Testing:** pytest for unit and integration testing
 *   **Documentation:** Markdown with automated API documentation
 
+### Chroma-Specific Tools
+
+*   **Chroma Python Client:** Direct Python integration for vector store operations
+*   **LangChain Chroma Integration:** Seamless RAG pipeline integration
+*   **Persistence Layer:** Local SQLite backend for embedding storage
+
 ---
 
 ## 4. Risk Mitigation Strategy
@@ -229,8 +250,9 @@ The AutoRAG implementation strategy is designed to deliver a fully functional Re
 | **API Cost Overruns** | High | Medium | Implement rate limiting, monitor usage, use batch processing |
 | **Poor Retrieval Quality** | High | Medium | Extensive prompt engineering, test multiple chunk sizes |
 | **Evaluation Metric Accuracy** | Medium | Medium | Use multiple evaluation metrics, manual validation |
-| **Performance Degradation** | Medium | Low | Implement caching, optimize FAISS parameters |
+| **Performance Degradation** | Medium | Low | Implement caching, optimize Chroma parameters |
 | **Data Privacy Concerns** | High | Low | Local-first approach, no data sent to external services except OpenAI |
+| **Chroma Compatibility** | Low | Low | Regular testing with latest Python versions, community support |
 
 ---
 
@@ -259,14 +281,14 @@ The AutoRAG implementation strategy is designed to deliver a fully functional Re
 
 *   **Environment:** Local development machine or small cloud instance (AWS EC2 t3.medium)
 *   **Database:** Local SQLite for evaluation results
-*   **Vector Store:** Local FAISS index
+*   **Vector Store:** Local Chroma with persistent storage
 *   **Access:** CLI and FastAPI on localhost
 
 ### Post-MVP Deployment
 
 *   **Environment:** Containerized (Docker) deployment on cloud platform
 *   **Database:** Migrate to managed PostgreSQL or Snowflake
-*   **Vector Store:** Migrate to Pinecone or Weaviate
+*   **Vector Store:** Migrate to Pinecone, Weaviate, or cloud-native solution
 *   **Access:** Public API with authentication and rate limiting
 *   **Monitoring:** CloudWatch or similar for logging and monitoring
 
@@ -277,7 +299,7 @@ The AutoRAG implementation strategy is designed to deliver a fully functional Re
 | Phase | Duration | Milestone | Status |
 | :--- | :--- | :--- | :--- |
 | **Phase 1: Foundation** | 2 days | Project setup complete | Pending |
-| **Phase 2: Data Ingestion** | 2 days | Ingestion pipeline operational | Pending |
+| **Phase 2: Data Ingestion** | 2 days | Ingestion pipeline operational with Chroma | Pending |
 | **Phase 3: RAG Pipeline** | 2 days | Core RAG system functional | Pending |
 | **Phase 4: User Interface** | 2 days | CLI and API endpoints ready | Pending |
 | **Phase 5: Evaluation** | 2 days | Autonomous evaluation system live | Pending |
@@ -290,8 +312,8 @@ The AutoRAG implementation strategy is designed to deliver a fully functional Re
 
 This strategy directly implements the architecture defined in `ARCHITECTURE.md`:
 
-*   **Phase 2** implements the Data Ingestion Pipeline component
-*   **Phase 3** implements the RAG Pipeline, Retriever, and Generator components
+*   **Phase 2** implements the Data Ingestion Pipeline component with Chroma integration
+*   **Phase 3** implements the RAG Pipeline, Retriever, and Generator components using Chroma
 *   **Phase 4** implements the User Interface component
 *   **Phase 5** implements the Autonomous Evaluation Agent and Evaluation Logic components
 *   **Phases 1 & 6** provide the foundation and quality assurance
@@ -300,7 +322,39 @@ Each phase delivers a working component that integrates seamlessly with the over
 
 ---
 
-## 9. Next Steps
+## 9. Chroma Integration Roadmap
+
+### Immediate (MVP)
+
+*   Implement basic Chroma vector store with OpenAI embeddings
+*   Integrate Chroma with LangChain RAG pipeline
+*   Implement similarity search and retrieval
+*   Set up persistent storage for embeddings
+
+### Short-term (Post-MVP Phase 1)
+
+*   Implement advanced filtering using metadata
+*   Add collection management for multi-tenant scenarios
+*   Optimize chunk size and embedding parameters
+*   Implement caching for frequently accessed documents
+
+### Medium-term (Post-MVP Phase 2)
+
+*   Migrate to cloud-hosted Chroma instance
+*   Implement hybrid search combining dense and sparse retrieval
+*   Add support for multiple embedding models
+*   Implement advanced analytics and monitoring
+
+### Long-term (Post-MVP Phase 3)
+
+*   Evaluate migration to specialized vector databases (Pinecone, Weaviate)
+*   Implement multi-modal embeddings (text + images)
+*   Add support for real-time index updates
+*   Implement distributed vector search
+
+---
+
+## 10. Next Steps
 
 1. **Review and Approve:** Stakeholders review and approve this strategy
 2. **Resource Allocation:** Assign development resources and establish team

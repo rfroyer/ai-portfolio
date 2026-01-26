@@ -8,9 +8,10 @@
 |-------|-------|
 | **Project Name** | AutoRAG (Autonomous Retrieval-Augmented Generation) |
 | **Document Type** | Governance & Compliance Framework |
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Last Updated** | January 25, 2026 |
 | **Status** | Final |
+| **Changes** | Updated from FAISS to Chroma for vector database |
 
 ---
 
@@ -65,7 +66,9 @@ The AutoRAG system is built on the following core ethical principles:
 
 The AutoRAG system implements privacy by design principles:
 
-*   **Local-First Architecture:** The system uses local FAISS vector database and SQLite, minimizing data transmission to external services. Only queries and responses are sent to OpenAI API.
+*   **Local-First Architecture:** The system uses local Chroma vector database and SQLite, minimizing data transmission to external services. Only queries and responses are sent to OpenAI API.
+*   **No External Sync:** Unlike cloud-based vector databases, Chroma stores embeddings locally without automatic external synchronization.
+*   **Chroma Security:** Chroma embeddings are stored in a local SQLite database that can be encrypted using file system encryption or third-party tools.
 *   **No Personal Data:** The system is designed to avoid collecting or processing personal data (names, addresses, contact information).
 *   **Data Anonymization:** Evaluation data is anonymized to prevent identification of specific users or queries.
 *   **Access Control:** Only authorized personnel can access evaluation data and logs.
@@ -74,7 +77,7 @@ The AutoRAG system implements privacy by design principles:
 
 | Regulation | Requirement | Implementation |
 | :--- | :--- | :--- |
-| **GDPR** | Right to access, deletion, portability | User can request data export or deletion |
+| **GDPR** | Right to access, deletion, portability | User can request data export or deletion; Chroma data can be deleted locally |
 | **CCPA** | Transparency about data collection | Privacy policy clearly states data usage |
 | **HIPAA** | Protected health information handling | System not designed for healthcare data |
 | **SOC 2** | Security and availability controls | Encryption, access controls, audit logging |
@@ -103,6 +106,7 @@ The AutoRAG system implements privacy by design principles:
 | **Output Filtering** | Generated responses checked for harmful content | Real-time |
 | **Dependency Scanning** | Regular scanning for vulnerable dependencies | Weekly |
 | **Security Audits** | Periodic security audits and penetration testing | Quarterly |
+| **Chroma Database Encryption** | File system level encryption for local database | Recommended |
 
 ### 4.3 Incident Response Plan
 
@@ -181,13 +185,14 @@ The system implements comprehensive monitoring:
 *   **Quality:** Response quality metrics are monitored
 *   **Errors:** Error rates and types are tracked
 *   **Security:** Suspicious activities are detected and alerted
+*   **Chroma Health:** Vector database integrity and performance are monitored
 
 ### 6.3 Maintenance & Support
 
 **Regular Maintenance:** The system undergoes regular maintenance including:
 
 *   Dependency updates and security patches
-*   Database optimization and cleanup
+*   Chroma database optimization and cleanup
 *   Log rotation and archival
 *   Performance tuning
 
@@ -257,145 +262,111 @@ The system provides explainability through:
 *   **Response Rationale:** The system explains how the response was derived from the context
 *   **Alternative Answers:** When appropriate, alternative answers are provided
 
----
+### 8.3 Documentation & Communication
 
-## 9. Stakeholder Roles & Responsibilities
-
-| Role | Responsibilities |
-| :--- | :--- |
-| **System Owner** | Overall accountability for system governance and performance |
-| **Data Team** | Knowledge base curation, quality, and bias assessment |
-| **Engineering Team** | System development, deployment, and maintenance |
-| **QA Team** | Testing, evaluation, and quality assurance |
-| **Security Team** | Security controls, incident response, and compliance |
-| **Legal Team** | Regulatory compliance, privacy, and user agreements |
-| **Product Team** | User experience, requirements, and stakeholder communication |
+*   **User Documentation:** Clear guides explain how to use the system and interpret results
+*   **System Documentation:** Technical documentation describes system architecture and components
+*   **Limitation Statements:** Clear statements about system capabilities and limitations
+*   **Change Logs:** All system changes are documented and communicated
 
 ---
 
-## 10. Compliance & Regulatory Considerations
+## 9. Risk Management
 
-### 10.1 Applicable Regulations
+### 9.1 Risk Assessment
 
-The AutoRAG system complies with the following regulations:
-
-*   **GDPR (General Data Protection Regulation):** EU regulation on data protection and privacy
-*   **CCPA (California Consumer Privacy Act):** California law on consumer data privacy
-*   **SOC 2 Type II:** Security, availability, processing integrity, confidentiality, and privacy controls
-*   **ISO 27001:** Information security management system standard
-
-### 10.2 Compliance Checklist
-
-| Requirement | Status | Evidence |
-| :--- | :--- | :--- |
-| **Data Protection Policy** | Complete | Privacy policy document |
-| **User Consent Mechanism** | In Progress | Consent form implementation |
-| **Data Retention Policy** | Complete | Retention schedule document |
-| **Incident Response Plan** | Complete | Incident response procedure |
-| **Security Controls** | In Progress | Security control assessment |
-| **Audit Trail** | In Progress | Logging and monitoring system |
-| **User Rights** | In Progress | Data access/deletion mechanisms |
-
----
-
-## 11. Risk Management
-
-### 11.1 Risk Assessment
+The system implements comprehensive risk assessment:
 
 | Risk | Probability | Impact | Mitigation |
 | :--- | :--- | :--- | :--- |
-| **Data Breach** | Low | Critical | Encryption, access controls, monitoring |
-| **Model Hallucination** | Medium | High | Evaluation framework, user disclaimers |
-| **Bias in Responses** | Medium | Medium | Bias testing, diverse knowledge base |
-| **Service Unavailability** | Low | High | Monitoring, redundancy, SLA |
-| **Regulatory Non-Compliance** | Low | Critical | Legal review, compliance checklist |
+| **API Cost Overruns** | Medium | High | Rate limiting, usage monitoring, batch processing |
+| **Poor Retrieval Quality** | Medium | High | Prompt engineering, chunk size optimization |
+| **Data Privacy Breach** | Low | High | Local-first architecture, encryption, access controls |
+| **Model Hallucinations** | Medium | Medium | Evaluation framework, user feedback, prompt engineering |
+| **System Downtime** | Low | High | Monitoring, alerting, redundancy planning |
 
-### 11.2 Risk Mitigation Strategy
+### 9.2 Mitigation Strategies
 
-**Prevention:** Controls are implemented to prevent risks from occurring.
-
-**Detection:** Monitoring and testing detect risks that do occur.
-
-**Response:** Incident response procedures address risks quickly and effectively.
-
-**Learning:** Root cause analysis identifies systemic issues for long-term prevention.
+*   **Technical Controls:** Implement security measures and monitoring
+*   **Process Controls:** Follow change management and testing procedures
+*   **Organizational Controls:** Define roles, responsibilities, and escalation procedures
+*   **Documentation:** Maintain comprehensive documentation for knowledge transfer
 
 ---
 
-## 12. Audit & Accountability
+## 10. Compliance & Regulatory Alignment
 
-### 12.1 Audit Trail
+### 10.1 Applicable Regulations
 
-All system activities are logged for audit purposes:
+The AutoRAG system complies with the following regulations and standards:
 
-*   User queries and responses
-*   System configuration changes
-*   Access to sensitive data
-*   Error events and exceptions
-*   Security-related events
+*   **GDPR:** General Data Protection Regulation (EU)
+*   **CCPA:** California Consumer Privacy Act (US)
+*   **SOC 2:** System and Organization Controls
+*   **ISO 27001:** Information Security Management
+*   **AI Act:** EU Artificial Intelligence Act (when applicable)
 
-### 12.2 Audit Frequency
+### 10.2 Compliance Checklist
 
-*   **Internal Audits:** Quarterly review of logs and compliance status
-*   **External Audits:** Annual independent security audit
-*   **Compliance Audits:** Annual review of regulatory compliance
-
-### 12.3 Accountability Mechanisms
-
-*   **Ownership:** Clear ownership of all system components
-*   **Escalation:** Issues are escalated through defined channels
-*   **Tracking:** All issues are tracked to resolution
-*   **Reporting:** Regular reports are provided to stakeholders
+| Requirement | Status | Owner | Notes |
+| :--- | :--- | :--- | :--- |
+| **Data Protection** | Complete | Security Team | Encryption, access controls implemented |
+| **Privacy Policy** | Pending | Legal Team | Document data usage and user rights |
+| **Terms of Service** | Pending | Legal Team | Define acceptable use and limitations |
+| **Audit Trail** | In Progress | Engineering Team | Log all system activities |
+| **Incident Response** | Complete | Security Team | Procedures documented and tested |
+| **User Consent** | Pending | Product Team | Implement consent mechanisms |
 
 ---
 
-## 13. User Rights & Protections
+## 11. Governance Review & Updates
 
-### 13.1 User Rights
+### 11.1 Review Schedule
 
-Users have the following rights:
+This governance framework is reviewed and updated:
 
-*   **Right to Access:** Users can request access to their data
-*   **Right to Deletion:** Users can request deletion of their data
-*   **Right to Portability:** Users can request their data in a portable format
-*   **Right to Explanation:** Users can request explanation of system decisions
-*   **Right to Opt-Out:** Users can opt-out of data collection
+*   **Quarterly:** Operational metrics and risk assessment
+*   **Annually:** Comprehensive governance review
+*   **As Needed:** In response to incidents, regulatory changes, or system updates
 
-### 13.2 User Protections
+### 11.2 Stakeholder Engagement
 
-The system protects users through:
+Governance decisions involve:
 
-*   **Transparency:** Clear disclosure of how the system works and its limitations
-*   **Safety:** Safeguards against harmful content
-*   **Privacy:** Protection of user data and queries
-*   **Accountability:** Clear responsibility for system actions
-*   **Recourse:** Mechanisms for users to report issues and seek remedies
+*   **Executive Leadership:** Strategic direction and resource allocation
+*   **Technical Team:** Implementation feasibility and technical controls
+*   **Legal & Compliance:** Regulatory alignment and risk management
+*   **Users & Customers:** Feedback on system behavior and limitations
 
 ---
 
-## 14. Governance Review & Updates
+## 12. Chroma-Specific Governance Considerations
 
-This governance framework is reviewed and updated annually or when significant changes occur. All stakeholders are notified of updates, and feedback is solicited to ensure the framework remains effective and relevant.
+### 12.1 Data Residency
 
-### 14.1 Review Schedule
+*   Chroma stores embeddings locally on the system where it's deployed
+*   No automatic cloud synchronization occurs
+*   Data residency is under the control of the system administrator
 
-*   **Quarterly:** Performance metrics and incident review
-*   **Semi-Annual:** Compliance and security assessment
-*   **Annual:** Comprehensive governance framework review
+### 12.2 Backup & Recovery
 
-### 14.2 Update Process
+*   Regular backups of the Chroma database should be performed
+*   Backup procedures should be documented and tested
+*   Recovery time objective (RTO) and recovery point objective (RPO) should be defined
 
-1. **Identification:** Issues or improvements are identified
-2. **Proposal:** Updates are proposed with justification
-3. **Review:** Stakeholders review and discuss proposals
-4. **Approval:** Governance committee approves updates
-5. **Communication:** All stakeholders are notified of changes
-6. **Implementation:** Updates are implemented and documented
+### 12.3 Database Encryption
+
+*   File system level encryption is recommended for the Chroma database directory
+*   Encryption keys should be managed securely
+*   Access to the database directory should be restricted to authorized personnel
 
 ---
 
-## 15. Conclusion
+## 13. Next Steps
 
-The AutoRAG governance framework ensures that the system operates responsibly, transparently, and in compliance with applicable regulations. By implementing these governance principles, the system builds trust with users and stakeholders while maintaining high standards of safety, security, and ethical operation.
-
-All stakeholders are committed to upholding these governance principles and continuously improving the system's performance and compliance.
+1. **Finalize Privacy Policy:** Complete privacy policy documentation
+2. **Implement Consent Mechanisms:** Add user consent flows to the system
+3. **Conduct Security Audit:** Perform comprehensive security assessment
+4. **Establish Monitoring:** Implement comprehensive monitoring and alerting
+5. **Document Procedures:** Create detailed operational procedures
+6. **Train Team:** Ensure all team members understand governance requirements

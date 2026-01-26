@@ -8,9 +8,10 @@
 |-------|-------|
 | **Project Name** | AutoRAG (Autonomous Retrieval-Augmented Generation) |
 | **Document Type** | Implementation Guide |
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Last Updated** | January 25, 2026 |
 | **Status** | Final |
+| **Changes** | Updated from FAISS to Chroma for vector database |
 
 ---
 
@@ -47,7 +48,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Create project structure
 mkdir -p src/{data_ingestion,rag_pipeline,evaluation,ui}
-mkdir -p data/{knowledge_base,embeddings}
+mkdir -p data/{knowledge_base,chroma_db}
 mkdir -p tests
 mkdir -p docs
 mkdir -p logs
@@ -58,15 +59,15 @@ mkdir -p logs
 Create a `requirements.txt` file with all necessary dependencies:
 
 ```
-langchain==0.1.0
-faiss-cpu==1.7.4
-openai==1.3.0
-crewai==0.1.0
-fastapi==0.104.0
-uvicorn==0.24.0
-python-dotenv==1.0.0
-pytest==7.4.0
-python-schedule==0.6.0
+langchain>=0.1.0
+chromadb>=0.5.0
+openai>=1.0.0
+crewai>=0.1.0
+fastapi>=0.100.0
+uvicorn>=0.24.0
+python-dotenv>=1.0.0
+pytest>=7.0.0
+schedule>=1.2.0
 ```
 
 Install dependencies:
@@ -83,7 +84,7 @@ Create a `.env` file in the project root to store API keys and configuration:
 OPENAI_API_KEY=your_api_key_here
 OPENAI_MODEL=gpt-4
 EMBEDDING_MODEL=text-embedding-3-small
-FAISS_INDEX_PATH=data/embeddings/faiss_index.bin
+CHROMA_PERSIST_DIR=data/chroma_db
 KNOWLEDGE_BASE_PATH=data/knowledge_base/
 EVALUATION_DB_PATH=data/evaluation_results.db
 LOG_LEVEL=INFO
@@ -98,6 +99,7 @@ import os
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4")
+CHROMA_PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR", "data/chroma_db")
 ```
 
 ---
@@ -189,122 +191,90 @@ class TextSplitter:
         return chunks
 ```
 
-### 3.3 Embedding Generation Module
-
-Create `src/data_ingestion/embeddings.py`:
-
-```python
-from openai import OpenAI
-import logging
-from typing import List
-
-logger = logging.getLogger(__name__)
-
-class EmbeddingGenerator:
-    """Generates embeddings for text chunks."""
-    
-    def __init__(self, model: str = "text-embedding-3-small"):
-        self.client = OpenAI()
-        self.model = model
-    
-    def generate_embeddings(self, chunks: List[dict]) -> List[dict]:
-        """Generate embeddings for all chunks."""
-        chunks_with_embeddings = []
-        
-        for i, chunk in enumerate(chunks):
-            try:
-                response = self.client.embeddings.create(
-                    input=chunk['content'],
-                    model=self.model
-                )
-                
-                embedding = response.data[0].embedding
-                chunk['embedding'] = embedding
-                chunks_with_embeddings.append(chunk)
-                
-                if (i + 1) % 10 == 0:
-                    logger.info(f"Generated embeddings for {i + 1}/{len(chunks)} chunks")
-            
-            except Exception as e:
-                logger.error(f"Error generating embedding for chunk {i}: {e}")
-        
-        logger.info(f"Successfully generated embeddings for {len(chunks_with_embeddings)} chunks")
-        return chunks_with_embeddings
-```
-
-### 3.4 FAISS Vector Database Module
+### 3.3 Chroma Vector Database Module
 
 Create `src/data_ingestion/vector_db.py`:
 
 ```python
-import faiss
-import numpy as np
-import pickle
+from langchain.vectorstores import Chroma
+from langchain.embeddings.openai import OpenAIEmbeddings
 import logging
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
 
 logger = logging.getLogger(__name__)
 
-class FAISSVectorDB:
-    """Manages FAISS vector database."""
+class ChromaVectorDB:
+    """Manages Chroma vector database with LangChain integration."""
     
-    def __init__(self, index_path: str, dimension: int = 1536):
-        self.index_path = Path(index_path)
-        self.dimension = dimension
-        self.index = None
-        self.metadata = []
+    def __init__(self, persist_dir: str, collection_name: str = "autorag_documents"):
+        self.persist_dir = Path(persist_dir)
+        self.persist_dir.mkdir(parents=True, exist_ok=True)
+        self.collection_name = collection_name
+        
+        # Initialize embeddings
+        self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+        
+        # Initialize or load Chroma vector store
+        self.vectorstore = Chroma(
+            collection_name=collection_name,
+            embedding_function=self.embeddings,
+            persist_directory=str(self.persist_dir)
+        )
+        
+        logger.info(f"Initialized Chroma vector store at {self.persist_dir}")
     
-    def create_index(self, chunks_with_embeddings: List[dict]) -> None:
-        """Create and populate FAISS index."""
-        embeddings = np.array([chunk['embedding'] for chunk in chunks_with_embeddings]).astype('float32')
+    def add_documents(self, chunks: List[dict]) -> None:
+        """Add document chunks to Chroma vector store."""
+        try:
+            # Prepare documents for Chroma
+            texts = [chunk['content'] for chunk in chunks]
+            metadatas = [
+                {
+                    'source': chunk['source'],
+                    'filename': chunk['filename'],
+                    'chunk_index': chunk['chunk_index']
+                }
+                for chunk in chunks
+            ]
+            
+            # Add to Chroma
+            self.vectorstore.add_texts(texts=texts, metadatas=metadatas)
+            self.vectorstore.persist()
+            
+            logger.info(f"Added {len(chunks)} chunks to Chroma vector store")
         
-        self.index = faiss.IndexFlatL2(self.dimension)
-        self.index.add(embeddings)
-        self.metadata = chunks_with_embeddings
-        
-        logger.info(f"Created FAISS index with {len(embeddings)} vectors")
+        except Exception as e:
+            logger.error(f"Error adding documents to Chroma: {e}")
+            raise
     
-    def save_index(self) -> None:
-        """Save index to disk."""
-        self.index_path.parent.mkdir(parents=True, exist_ok=True)
+    def search(self, query: str, k: int = 5) -> List[dict]:
+        """Search for similar documents in Chroma."""
+        try:
+            results = self.vectorstore.similarity_search_with_scores(query, k=k)
+            
+            formatted_results = []
+            for doc, score in results:
+                formatted_results.append({
+                    'content': doc.page_content,
+                    'source': doc.metadata.get('source', 'Unknown'),
+                    'filename': doc.metadata.get('filename', 'Unknown'),
+                    'similarity_score': score
+                })
+            
+            logger.info(f"Found {len(formatted_results)} similar documents for query")
+            return formatted_results
         
-        faiss.write_index(self.index, str(self.index_path))
-        
-        metadata_path = self.index_path.with_suffix('.pkl')
-        with open(metadata_path, 'wb') as f:
-            pickle.dump(self.metadata, f)
-        
-        logger.info(f"Saved FAISS index to {self.index_path}")
+        except Exception as e:
+            logger.error(f"Error searching Chroma: {e}")
+            return []
     
-    def load_index(self) -> None:
-        """Load index from disk."""
-        if not self.index_path.exists():
-            logger.warning(f"Index not found at {self.index_path}")
-            return
-        
-        self.index = faiss.read_index(str(self.index_path))
-        
-        metadata_path = self.index_path.with_suffix('.pkl')
-        with open(metadata_path, 'rb') as f:
-            self.metadata = pickle.load(f)
-        
-        logger.info(f"Loaded FAISS index from {self.index_path}")
-    
-    def search(self, query_embedding: List[float], k: int = 5) -> List[dict]:
-        """Search for similar documents."""
-        query_vector = np.array([query_embedding]).astype('float32')
-        distances, indices = self.index.search(query_vector, k)
-        
-        results = []
-        for idx in indices[0]:
-            if idx < len(self.metadata):
-                results.append(self.metadata[idx])
-        
-        return results
+    def get_retriever(self, k: int = 5):
+        """Get LangChain retriever from Chroma."""
+        return self.vectorstore.as_retriever(search_kwargs={"k": k})
 ```
 
-### 3.5 Data Ingestion Pipeline Script
+### 3.4 Data Ingestion Pipeline Script
 
 Create `src/data_ingestion/pipeline.py`:
 
@@ -312,8 +282,7 @@ Create `src/data_ingestion/pipeline.py`:
 import os
 from document_loader import DocumentLoader
 from text_splitter import TextSplitter
-from embeddings import EmbeddingGenerator
-from vector_db import FAISSVectorDB
+from vector_db import ChromaVectorDB
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -323,7 +292,7 @@ def run_ingestion_pipeline():
     """Run the complete data ingestion pipeline."""
     
     knowledge_base_path = os.getenv("KNOWLEDGE_BASE_PATH", "data/knowledge_base/")
-    faiss_index_path = os.getenv("FAISS_INDEX_PATH", "data/embeddings/faiss_index.bin")
+    chroma_persist_dir = os.getenv("CHROMA_PERSIST_DIR", "data/chroma_db")
     
     logger.info("Starting data ingestion pipeline...")
     
@@ -339,14 +308,9 @@ def run_ingestion_pipeline():
     splitter = TextSplitter(chunk_size=512, overlap=50)
     chunks = splitter.split_documents(documents)
     
-    # Step 3: Generate embeddings
-    embedding_gen = EmbeddingGenerator()
-    chunks_with_embeddings = embedding_gen.generate_embeddings(chunks)
-    
-    # Step 4: Create and save FAISS index
-    vector_db = FAISSVectorDB(faiss_index_path)
-    vector_db.create_index(chunks_with_embeddings)
-    vector_db.save_index()
+    # Step 3: Create Chroma vector store and add documents
+    vector_db = ChromaVectorDB(chroma_persist_dir)
+    vector_db.add_documents(chunks)
     
     logger.info("Data ingestion pipeline completed successfully!")
 
@@ -363,36 +327,46 @@ if __name__ == "__main__":
 Create `src/rag_pipeline/retriever.py`:
 
 ```python
-from openai import OpenAI
-from vector_db import FAISSVectorDB
+from langchain.vectorstores import Chroma
+from langchain.embeddings.openai import OpenAIEmbeddings
 import logging
 from typing import List
 
 logger = logging.getLogger(__name__)
 
 class Retriever:
-    """Retrieves relevant documents from vector database."""
+    """Retrieves relevant documents using Chroma."""
     
-    def __init__(self, vector_db: FAISSVectorDB):
-        self.client = OpenAI()
-        self.vector_db = vector_db
-        self.embedding_model = "text-embedding-3-small"
+    def __init__(self, persist_dir: str):
+        self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+        
+        self.vectorstore = Chroma(
+            collection_name="autorag_documents",
+            embedding_function=self.embeddings,
+            persist_directory=persist_dir
+        )
     
     def retrieve(self, query: str, k: int = 5) -> List[dict]:
         """Retrieve relevant documents for a query."""
         
-        # Generate query embedding
-        response = self.client.embeddings.create(
-            input=query,
-            model=self.embedding_model
-        )
-        query_embedding = response.data[0].embedding
+        try:
+            results = self.vectorstore.similarity_search_with_scores(query, k=k)
+            
+            formatted_results = []
+            for doc, score in results:
+                formatted_results.append({
+                    'content': doc.page_content,
+                    'source': doc.metadata.get('source', 'Unknown'),
+                    'filename': doc.metadata.get('filename', 'Unknown'),
+                    'similarity_score': score
+                })
+            
+            logger.info(f"Retrieved {len(formatted_results)} documents for query: {query[:50]}...")
+            return formatted_results
         
-        # Search vector database
-        results = self.vector_db.search(query_embedding, k=k)
-        
-        logger.info(f"Retrieved {len(results)} documents for query: {query[:50]}...")
-        return results
+        except Exception as e:
+            logger.error(f"Error retrieving documents: {e}")
+            return []
 ```
 
 ### 4.2 Generator Component
@@ -459,19 +433,15 @@ Create `src/rag_pipeline/rag.py`:
 ```python
 from retriever import Retriever
 from generator import Generator
-from vector_db import FAISSVectorDB
 import logging
 
 logger = logging.getLogger(__name__)
 
 class RAGPipeline:
-    """Orchestrates the RAG pipeline."""
+    """Orchestrates the RAG pipeline with Chroma."""
     
-    def __init__(self, vector_db_path: str):
-        self.vector_db = FAISSVectorDB(vector_db_path)
-        self.vector_db.load_index()
-        
-        self.retriever = Retriever(self.vector_db)
+    def __init__(self, chroma_persist_dir: str):
+        self.retriever = Retriever(chroma_persist_dir)
         self.generator = Generator()
     
     def answer_query(self, query: str, k: int = 5) -> dict:
@@ -486,7 +456,8 @@ class RAGPipeline:
             return {
                 "query": query,
                 "answer": "I could not find relevant information to answer your question.",
-                "sources": []
+                "sources": [],
+                "context_count": 0
             }
         
         # Generate response
@@ -516,6 +487,7 @@ import argparse
 import sys
 from rag_pipeline import RAGPipeline
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -523,8 +495,8 @@ logger = logging.getLogger(__name__)
 class RAGCLI:
     """Command-line interface for RAG system."""
     
-    def __init__(self, vector_db_path: str):
-        self.rag = RAGPipeline(vector_db_path)
+    def __init__(self, chroma_persist_dir: str):
+        self.rag = RAGPipeline(chroma_persist_dir)
     
     def run(self):
         """Run CLI interface."""
@@ -562,9 +534,8 @@ class RAGCLI:
         print("="*60 + "\n")
 
 if __name__ == "__main__":
-    import os
-    vector_db_path = os.getenv("FAISS_INDEX_PATH", "data/embeddings/faiss_index.bin")
-    cli = RAGCLI(vector_db_path)
+    chroma_persist_dir = os.getenv("CHROMA_PERSIST_DIR", "data/chroma_db")
+    cli = RAGCLI(chroma_persist_dir)
     cli.run()
 ```
 
@@ -588,8 +559,8 @@ app = FastAPI(
     version="1.0.0"
 )
 
-vector_db_path = os.getenv("FAISS_INDEX_PATH", "data/embeddings/faiss_index.bin")
-rag_pipeline = RAGPipeline(vector_db_path)
+chroma_persist_dir = os.getenv("CHROMA_PERSIST_DIR", "data/chroma_db")
+rag_pipeline = RAGPipeline(chroma_persist_dir)
 
 class QueryRequest(BaseModel):
     query: str
@@ -770,8 +741,8 @@ logger = logging.getLogger(__name__)
 class EvaluationAgent:
     """Autonomous evaluation agent."""
     
-    def __init__(self, vector_db_path: str, db_path: str, questions_file: str):
-        self.rag = RAGPipeline(vector_db_path)
+    def __init__(self, chroma_persist_dir: str, db_path: str, questions_file: str):
+        self.rag = RAGPipeline(chroma_persist_dir)
         self.eval_logic = EvaluationLogic()
         self.eval_db = EvaluationDatabase(db_path)
         self.questions = self.load_questions(questions_file)
@@ -808,11 +779,11 @@ class EvaluationAgent:
         logger.info("Evaluation completed!")
 
 if __name__ == "__main__":
-    vector_db_path = os.getenv("FAISS_INDEX_PATH", "data/embeddings/faiss_index.bin")
+    chroma_persist_dir = os.getenv("CHROMA_PERSIST_DIR", "data/chroma_db")
     db_path = os.getenv("EVALUATION_DB_PATH", "data/evaluation_results.db")
     questions_file = "data/evaluation_questions.json"
     
-    agent = EvaluationAgent(vector_db_path, db_path, questions_file)
+    agent = EvaluationAgent(chroma_persist_dir, db_path, questions_file)
     agent.run_evaluation()
 ```
 
@@ -830,12 +801,12 @@ from src.rag_pipeline.rag import RAGPipeline
 
 def test_rag_pipeline_initialization():
     """Test RAG pipeline initialization."""
-    rag = RAGPipeline("data/embeddings/faiss_index.bin")
+    rag = RAGPipeline("data/chroma_db")
     assert rag is not None
 
 def test_answer_query():
     """Test query answering."""
-    rag = RAGPipeline("data/embeddings/faiss_index.bin")
+    rag = RAGPipeline("data/chroma_db")
     result = rag.answer_query("What is AI?")
     
     assert "query" in result
@@ -896,16 +867,61 @@ logging.basicConfig(
 | Issue | Solution |
 | :--- | :--- |
 | **OpenAI API errors** | Verify API key is set correctly in .env file |
-| **FAISS index not found** | Run data ingestion pipeline first |
+| **Chroma database not found** | Run data ingestion pipeline first to create embeddings |
 | **Slow embeddings** | Use smaller chunk sizes or batch processing |
 | **Poor retrieval quality** | Adjust chunk size, overlap, or number of results (k) |
+| **Chroma persistence issues** | Verify `CHROMA_PERSIST_DIR` has write permissions |
 
 ---
 
-## 11. Next Steps
+## 11. Chroma-Specific Configuration
+
+### Collection Management
+
+```python
+# Create or access a specific collection
+vectorstore = Chroma(
+    collection_name="my_collection",
+    embedding_function=embeddings,
+    persist_directory="./data/chroma_db"
+)
+
+# Get collection info
+collection = vectorstore._collection
+print(f"Collection count: {collection.count()}")
+```
+
+### Advanced Filtering
+
+```python
+# Search with metadata filtering
+results = vectorstore.similarity_search_with_score(
+    query="machine learning",
+    k=5,
+    where={"filename": {"$eq": "ai_guide.txt"}}
+)
+```
+
+### Persistence
+
+```python
+# Manually persist changes
+vectorstore.persist()
+
+# Load existing collection
+vectorstore = Chroma(
+    collection_name="autorag_documents",
+    embedding_function=embeddings,
+    persist_directory="./data/chroma_db"
+)
+```
+
+---
+
+## 12. Next Steps
 
 1. Complete Phase 1: Environment setup
-2. Implement Phase 2: Data ingestion pipeline
+2. Implement Phase 2: Data ingestion pipeline with Chroma
 3. Implement Phase 3: RAG pipeline core
 4. Implement Phase 4: User interfaces
 5. Implement Phase 5: Evaluation system
