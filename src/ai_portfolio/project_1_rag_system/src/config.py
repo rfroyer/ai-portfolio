@@ -1,24 +1,42 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
 
+# Base directory
+BASE_DIR = Path(__file__).parent.parent
+
 # API Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4")
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY environment variable not set")
 
-# Database Configuration
-CHROMA_PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR", "data/chroma_db")
-KNOWLEDGE_BASE_PATH = os.getenv("KNOWLEDGE_BASE_PATH", "data/knowledge_base/")
-EVALUATION_DB_PATH = os.getenv("EVALUATION_DB_PATH", "data/evaluation_results.db")
+# Data Paths
+KNOWLEDGE_BASE_PATH = os.path.join(BASE_DIR, "data", "knowledge_base")
+CHROMA_DB_PATH = os.path.join(BASE_DIR, "data", "chroma_db")
+EVALUATION_DB_PATH = os.path.join(BASE_DIR, "data", "evaluation.db")
+
+# Model Configuration
+EMBEDDING_MODEL = "text-embedding-3-small"
+LLM_MODEL = "gpt-4-turbo"
+TEMPERATURE = 0.7
+MAX_TOKENS = 2000
+
+# Chunking Configuration
+CHUNK_SIZE = 1000
+CHUNK_OVERLAP = 200
+
+# RAG Configuration
+TOP_K_RETRIEVAL = 5
+SIMILARITY_THRESHOLD = 0.5
 
 # Logging Configuration
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+LOG_LEVEL = "INFO"
 
-# Validate required configuration
-if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY is not set in .env file")
+# Verify paths exist
+os.makedirs(KNOWLEDGE_BASE_PATH, exist_ok=True)
+os.makedirs(CHROMA_DB_PATH, exist_ok=True)
 
 print("Configuration loaded successfully!")

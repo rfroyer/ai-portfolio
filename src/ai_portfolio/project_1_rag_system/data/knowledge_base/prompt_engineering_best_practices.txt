@@ -1,0 +1,47 @@
+PROMPT ENGINEERING BEST PRACTICES
+
+1. CLARITY AND SPECIFICITY
+- Be explicit about what you want
+- Avoid ambiguous language
+- Specify the format of desired output
+- Example: "Generate a JSON response with fields: title, summary, keywords"
+
+2. CONTEXT AND ROLE DEFINITION
+- Define the AI's role or persona
+- Provide relevant background information
+- Set expectations for tone and style
+- Example: "You are a senior software architect. Explain this concept..."
+
+3. EXAMPLES AND DEMONSTRATIONS
+- Provide few-shot examples of desired output
+- Show input-output pairs
+- Helps the model understand patterns
+- Example: "Here are 3 examples of good summaries: [examples]"
+
+4. CONSTRAINTS AND GUIDELINES
+- Specify length limits
+- Define forbidden content
+- Set quality standards
+- Example: "Keep response under 200 words. Avoid technical jargon."
+
+5. ITERATIVE REFINEMENT
+- Start with a basic prompt
+- Test and evaluate outputs
+- Refine based on results
+- Repeat until satisfied
+
+6. TEMPERATURE AND PARAMETERS
+- Use lower temperature (0.3-0.5) for factual tasks
+- Use higher temperature (0.7-0.9) for creative tasks
+- Adjust max_tokens based on desired output length
+
+7. CHAIN-OF-THOUGHT PROMPTING
+- Ask the model to explain reasoning
+- Break complex tasks into steps
+- Improves accuracy on complex problems
+- Example: "Think step-by-step before providing your answer"
+
+8. SYSTEM PROMPTS
+- Define system-level instructions
+- Set consistent behavior across interactions
+- Establish guardrails and boundaries

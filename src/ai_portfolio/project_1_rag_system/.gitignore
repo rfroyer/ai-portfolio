@@ -6,3 +6,18 @@ __pycache__/
 .DS_Store
 .env
 *.log
+
+# IDE files (optional)
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Pytest
+.pytest_cache/
+.coverage
+
+# Build files
+dist/
+build/
+*.egg-info/

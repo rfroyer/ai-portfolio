@@ -1,0 +1,66 @@
+LANGCHAIN FRAMEWORK OVERVIEW
+
+LangChain is a framework for developing applications powered by language models.
+
+CORE COMPONENTS
+
+1. Language Models (LLMs)
+   - Interface to various LLM providers
+   - Supports OpenAI, Anthropic, Hugging Face, etc.
+   - Handles token counting and rate limiting
+
+2. Prompts
+   - PromptTemplate: Reusable prompt structures
+   - FewShotPromptTemplate: Examples-based prompts
+   - ChatPromptTemplate: Multi-turn conversations
+
+3. Chains
+   - LLMChain: Connects prompts to LLMs
+   - SequentialChain: Chains multiple operations
+   - RouterChain: Conditional routing logic
+
+4. Memory
+   - ConversationBufferMemory: Stores conversation history
+   - ConversationSummaryMemory: Summarizes history
+   - VectorStoreMemory: Uses embeddings for retrieval
+
+5. Retrievers
+   - VectorStoreRetriever: Retrieves from vector databases
+   - BM25Retriever: Full-text search
+   - MultiQueryRetriever: Multiple query formulations
+
+6. Agents
+   - ReActAgent: Reasoning + Acting loop
+   - Tool integration for external APIs
+   - Dynamic decision making
+
+COMMON PATTERNS
+
+RAG Pattern:
+1. Load documents
+2. Split into chunks
+3. Create embeddings
+4. Store in vector database
+5. Create retriever
+6. Build QA chain
+7. Query with context
+
+Question Answering:
+1. Load documents
+2. Create vector store
+3. Initialize retriever
+4. Create QA chain
+5. Ask questions
+
+Conversational QA:
+1. Initialize memory
+2. Create retriever
+3. Build conversation chain
+4. Maintain context across turns
+
+BEST PRACTICES
+- Use streaming for long responses
+- Implement error handling
+- Monitor token usage
+- Cache embeddings when possible
+- Version your prompts
