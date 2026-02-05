@@ -1,0 +1,571 @@
+# Governance and Standards
+
+## Project Governance Framework
+
+This document establishes the governance structure, coding standards, and operational procedures for the Supply Chain Optimization Dashboard project.
+
+## Code Organization and Standards
+
+### Python Backend Standards
+
+#### File Structure
+```
+src/
+├── main.py                 # FastAPI application and endpoints
+├── snowflake_connector.py  # Database connectivity
+├── train_model.py          # AI/ML model implementation
+└── requirements.txt        # Python dependencies
+```
+
+#### Naming Conventions
+
+**Variables and Functions**
+*   Use `snake_case` for all variables and function names
+*   Use descriptive names that clearly indicate purpose
+*   Avoid single-letter variables except in loops
+
+**Classes**
+*   Use `PascalCase` for class names
+*   Example: `SnowflakeConnector`, `DemandForecaster`
+
+**Constants**
+*   Use `UPPER_SNAKE_CASE` for constants
+*   Example: `MAX_FORECAST_DAYS = 30`
+
+#### Code Style
+
+**Imports**
+```python
+# Standard library imports first
+import asyncio
+import traceback
+
+# Third-party imports
+import pandas as pd
+from fastapi import FastAPI
+
+# Local imports
+from snowflake_connector import SnowflakeConnector
+```
+
+**Function Documentation**
+```python
+def get_sales_by_product(self, product_id: int) -> pd.DataFrame:
+    """
+    Fetches sales data for a specific product.
+    
+    Args:
+        product_id: The unique identifier of the product
+        
+    Returns:
+        DataFrame with columns: ds (date), y (quantity)
+        
+    Raises:
+        Exception: If database query fails
+    """
+```
+
+**Type Hints**
+*   Use type hints for all function parameters and return values
+*   Example: `def predict(self, sales_data: pd.DataFrame) -> pd.DataFrame:`
+
+#### Error Handling
+
+**Exception Handling Pattern**
+```python
+try:
+    # Attempt operation
+    result = perform_operation()
+except SpecificException as e:
+    # Log specific exception
+    print(f"Specific error: {e}")
+    # Return safe default
+    return default_value
+except Exception as e:
+    # Catch-all for unexpected errors
+    print(f"Unexpected error: {e}")
+    traceback.print_exc()
+    return None
+```
+
+**Logging**
+*   Use `print()` statements for development
+*   Transition to proper logging framework (logging module) for production
+*   Include context in log messages
+
+#### Performance Considerations
+
+**Database Queries**
+*   Always use parameterized queries to prevent SQL injection
+*   Minimize the number of queries per request
+*   Cache results when appropriate
+
+**Async Operations**
+*   Use `asyncio` for I/O-bound operations
+*   Use `run_in_executor` for CPU-bound operations
+*   Always clean up resources properly
+
+### JavaScript/React Frontend Standards
+
+#### File Structure
+```
+frontend/src/
+├── App.js        # Main component
+├── App.css       # Styling
+└── index.js      # Entry point
+```
+
+#### Naming Conventions
+
+**Components**
+*   Use `PascalCase` for component names
+*   File names match component names
+*   Example: `ProductSelector.js` for `ProductSelector` component
+
+**Variables and Functions**
+*   Use `camelCase` for variables and functions
+*   Use descriptive names indicating purpose
+*   Example: `handleProductChange`, `fetchForecastData`
+
+**Constants**
+*   Use `UPPER_SNAKE_CASE` for constants
+*   Example: `API_BASE_URL = 'http://localhost:8000'`
+
+#### React Best Practices
+
+**State Management**
+```javascript
+// Use useState for component state
+const [selectedProductId, setSelectedProductId] = useState(null);
+
+// Use useEffect for side effects
+useEffect(() => {
+    // Fetch data when product changes
+}, [selectedProductId]);
+```
+
+**Effect Cleanup**
+```javascript
+useEffect(() => {
+    let isMounted = true;
+    
+    // Async operation
+    fetchData().then(data => {
+        if (isMounted) {
+            setData(data);
+        }
+    });
+    
+    // Cleanup function
+    return () => {
+        isMounted = false;
+    };
+}, [dependencies]);
+```
+
+**Component Structure**
+```javascript
+function ComponentName() {
+    // 1. State declarations
+    const [state, setState] = useState(initialValue);
+    
+    // 2. Effects
+    useEffect(() => {
+        // Side effects
+    }, [dependencies]);
+    
+    // 3. Event handlers
+    const handleEvent = () => {
+        // Handle event
+    };
+    
+    // 4. Render
+    return (
+        <div>
+            {/* JSX content */}
+        </div>
+    );
+}
+```
+
+#### Styling Standards
+
+**TailwindCSS Usage**
+*   Prefer utility classes over custom CSS
+*   Use responsive prefixes (sm:, md:, lg:)
+*   Example: `className="p-4 md:p-8 lg:p-12"`
+
+**CSS Organization**
+*   Group related styles together
+*   Use meaningful class names
+*   Document complex styling decisions
+
+## API Design Standards
+
+### RESTful Principles
+
+**Resource-Oriented URLs**
+```
+GET /products              # List all products
+GET /products/{id}         # Get specific product
+GET /product-summary/{id}  # Get product summary
+GET /forecast/{id}         # Get forecast for product
+```
+
+**HTTP Methods**
+*   `GET`: Retrieve data (safe, idempotent)
+*   `POST`: Create new resource (not idempotent)
+*   `PUT`: Update entire resource (idempotent)
+*   `DELETE`: Remove resource (idempotent)
+
+**Response Format**
+```json
+{
+    "product_id": 1,
+    "product_name": "Wireless Mouse",
+    "forecast": [
+        {
+            "ds": "2026-02-06",
+            "yhat": 45.23
+        }
+    ]
+}
+```
+
+**Error Responses**
+```json
+{
+    "detail": "Product not found",
+    "status_code": 404
+}
+```
+
+### Status Codes
+
+*   `200 OK`: Request successful
+*   `201 Created`: Resource created successfully
+*   `400 Bad Request`: Invalid request parameters
+*   `401 Unauthorized`: Authentication required
+*   `403 Forbidden`: Insufficient permissions
+*   `404 Not Found`: Resource not found
+*   `500 Internal Server Error`: Server error
+
+## Testing Standards
+
+### Unit Testing
+
+**Backend Testing (pytest)**
+```python
+def test_get_sales_by_product():
+    """Test that sales data is retrieved correctly."""
+    connector = SnowflakeConnector()
+    result = connector.get_sales_by_product(product_id=1)
+    
+    assert isinstance(result, pd.DataFrame)
+    assert 'ds' in result.columns
+    assert 'y' in result.columns
+    assert len(result) > 0
+```
+
+**Frontend Testing (Jest/React Testing Library)**
+```javascript
+test('renders product dropdown', () => {
+    const { getByLabelText } = render(<App />);
+    const dropdown = getByLabelText('Select Product:');
+    expect(dropdown).toBeInTheDocument();
+});
+```
+
+### Integration Testing
+
+*   Test API endpoints with sample data
+*   Verify database connectivity
+*   Test frontend-backend communication
+
+### Performance Testing
+
+*   Measure forecast generation time
+*   Monitor database query performance
+*   Track API response times
+
+## Documentation Standards
+
+### Code Comments
+
+**When to Comment**
+*   Complex algorithms or logic
+*   Non-obvious design decisions
+*   Workarounds or hacks
+*   Important assumptions
+
+**Comment Style**
+```python
+# Single-line comments for brief explanations
+# Use complete sentences
+
+"""
+Multi-line comments for detailed explanations.
+Explain the why, not the what.
+"""
+```
+
+### Docstrings
+
+**Function Docstrings**
+```python
+def function_name(param1: str, param2: int) -> bool:
+    """
+    Brief description of what the function does.
+    
+    Longer description if needed, explaining the purpose
+    and any important details.
+    
+    Args:
+        param1: Description of param1
+        param2: Description of param2
+        
+    Returns:
+        Description of return value
+        
+    Raises:
+        ValueError: When parameter validation fails
+    """
+```
+
+### README and Documentation Files
+
+*   Keep README up-to-date with current instructions
+*   Document all configuration options
+*   Include troubleshooting section
+*   Provide examples for common tasks
+
+## Version Control Standards
+
+### Git Workflow
+
+**Branch Naming**
+```
+feature/feature-name          # New features
+bugfix/bug-description        # Bug fixes
+hotfix/urgent-fix             # Critical fixes
+refactor/refactoring-task     # Code refactoring
+docs/documentation-update     # Documentation
+```
+
+**Commit Messages**
+```
+[TYPE] Brief description (50 chars max)
+
+Longer explanation of the change, why it was made,
+and any relevant context. Wrap at 72 characters.
+
+Fixes #123
+```
+
+**Types**
+*   `feat`: New feature
+*   `fix`: Bug fix
+*   `docs`: Documentation
+*   `style`: Code style (formatting, missing semicolons)
+*   `refactor`: Code refactoring
+*   `perf`: Performance improvement
+*   `test`: Adding or updating tests
+
+### Pull Request Process
+
+1.  Create feature branch from `main`
+2.  Make changes with clear commit messages
+3.  Push branch to repository
+4.  Create pull request with description
+5.  Request code review
+6.  Address review comments
+7.  Merge after approval
+
+## Dependency Management
+
+### Python Dependencies
+
+**requirements.txt Format**
+```
+fastapi==0.104.1
+uvicorn==0.24.0
+pandas==2.1.0
+snowflake-connector-python==3.5.0
+pmdarima==2.0.4
+```
+
+**Updating Dependencies**
+```bash
+# Update specific package
+pip install --upgrade package-name
+
+# Update all packages
+pip install --upgrade -r requirements.txt
+
+# Freeze current versions
+pip freeze > requirements.txt
+```
+
+### JavaScript Dependencies
+
+**package.json Management**
+```json
+{
+    "dependencies": {
+        "react": "^18.2.0",
+        "axios": "^1.6.0",
+        "chart.js": "^4.4.0"
+    },
+    "devDependencies": {
+        "vite": "^5.0.0"
+    }
+}
+```
+
+**Versioning Strategy**
+*   Use caret (^) for minor updates: `^1.2.3` allows `1.x.x`
+*   Use tilde (~) for patch updates: `~1.2.3` allows `1.2.x`
+*   Pin exact versions for critical dependencies
+
+## Security Standards
+
+### Credential Management
+
+**Environment Variables**
+```bash
+# .env file (never commit to git)
+SNOWFLAKE_USER=username
+SNOWFLAKE_PASSWORD=password
+SNOWFLAKE_ACCOUNT=account_id
+```
+
+**Secrets in Production**
+*   Use cloud provider secret management (AWS Secrets Manager, etc.)
+*   Rotate credentials regularly
+*   Use service accounts with minimal permissions
+*   Never log sensitive information
+
+### Code Security
+
+**SQL Injection Prevention**
+```python
+# ❌ WRONG - Vulnerable to SQL injection
+query = f"SELECT * FROM SALES WHERE PRODUCT_ID = {product_id}"
+
+# ✅ CORRECT - Use parameterized queries
+query = "SELECT * FROM SALES WHERE PRODUCT_ID = ?"
+```
+
+**API Security**
+*   Validate all input parameters
+*   Implement rate limiting
+*   Use HTTPS in production
+*   Implement CORS properly
+
+## Performance Standards
+
+### Frontend Performance
+
+**Targets**
+*   Page load time: <2 seconds
+*   API response time: <500ms
+*   Chart rendering: <1 second
+
+**Optimization Techniques**
+*   Code splitting
+*   Lazy loading
+*   Image optimization
+*   Caching strategies
+
+### Backend Performance
+
+**Targets**
+*   Product list query: <100ms
+*   Summary metrics query: <500ms
+*   Forecast generation: 30-60 seconds
+
+**Optimization Techniques**
+*   Database indexing
+*   Query optimization
+*   Caching frequently accessed data
+*   Async processing for long-running tasks
+
+## Monitoring and Maintenance
+
+### Regular Tasks
+
+**Daily**
+*   Monitor application logs
+*   Check error rates
+*   Verify data freshness
+
+**Weekly**
+*   Review performance metrics
+*   Check for security updates
+*   Validate backup integrity
+
+**Monthly**
+*   Analyze usage patterns
+*   Review and optimize slow queries
+*   Update dependencies
+*   Conduct security audit
+
+### Incident Response
+
+**Severity Levels**
+*   **Critical:** System down, data loss risk
+*   **High:** Major feature broken, significant performance degradation
+*   **Medium:** Minor feature broken, workaround available
+*   **Low:** Cosmetic issues, no user impact
+
+**Response Process**
+1.  Identify and assess severity
+2.  Notify relevant team members
+3.  Implement immediate mitigation
+4.  Root cause analysis
+5.  Implement permanent fix
+6.  Post-incident review
+
+## Change Management
+
+### Deployment Process
+
+1.  **Development:** Code changes and testing
+2.  **Staging:** Deploy to staging environment
+3.  **Testing:** Comprehensive testing in staging
+4.  **Approval:** Code review and sign-off
+5.  **Production:** Deploy to production
+6.  **Monitoring:** Monitor for issues
+
+### Rollback Procedure
+
+*   Maintain previous version in production
+*   Document rollback steps
+*   Test rollback process regularly
+*   Execute rollback if critical issues detected
+
+## Continuous Improvement
+
+### Code Review Checklist
+
+- [ ] Code follows naming conventions
+- [ ] Functions have docstrings
+- [ ] Error handling is appropriate
+- [ ] No hardcoded values
+- [ ] Tests are included
+- [ ] Performance is acceptable
+- [ ] Security best practices followed
+- [ ] Documentation is updated
+
+### Technical Debt Management
+
+*   Track technical debt items
+*   Allocate time for refactoring
+*   Prioritize high-impact improvements
+*   Document decisions and trade-offs
+
+---
+
+**Governance Version:** 1.0  
+**Last Updated:** February 2026  
+**Next Review:** August 2026

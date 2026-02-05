@@ -1,0 +1,435 @@
+# Architecture Documentation
+
+## System Overview
+
+The Supply Chain Optimization Dashboard is a modern, three-tier web application architecture consisting of a frontend presentation layer, a backend API layer, and a data persistence layer. This document provides a comprehensive overview of the system's design, components, and interactions.
+
+## High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        CLIENT LAYER                             │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  React Frontend (http://localhost:3000)                 │  │
+│  │  - Product Selection UI                                 │  │
+│  │  - Summary Metrics Display                              │  │
+│  │  - Forecast Chart Visualization                         │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                    HTTP/REST API (Axios)
+                              │
+┌─────────────────────────────────────────────────────────────────┐
+│                       API LAYER                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  FastAPI Backend (http://localhost:8000)                │  │
+│  │  - GET /products                                        │  │
+│  │  - GET /product-summary/{product_id}                    │  │
+│  │  - GET /forecast/{product_id}                           │  │
+│  │  - CORS Middleware                                      │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                   Database Queries (SQL)
+                              │
+┌─────────────────────────────────────────────────────────────────┐
+│                    DATA LAYER                                   │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Snowflake Data Warehouse                               │  │
+│  │  - PRODUCTS table                                       │  │
+│  │  - SALES table                                          │  │
+│  │  - INVENTORY table                                      │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Component Architecture
+
+### 1. Frontend Layer (React)
+
+#### Purpose
+Provides an interactive user interface for browsing products, viewing metrics, and analyzing demand forecasts.
+
+#### Key Components
+
+**App.js (Main Component)**
+*   Manages global application state (products, selected product, forecast data)
+*   Handles API communication via Axios
+*   Coordinates between UI components
+*   Implements effect cleanup for proper async handling
+
+**State Management**
+```javascript
+- products: Array of available products
+- selectedProductId: Currently selected product
+- productSummary: Metrics for selected product
+- forecastData: Chart data for 30-day forecast
+- isSummaryLoading: Loading state for metrics
+- isChartLoading: Loading state for forecast
+- chartKey: Forces chart re-render on data change
+```
+
+**UI Components**
+*   Summary Cards: Display revenue, transactions, inventory
+*   Product Dropdown: Select product from catalog
+*   Forecast Chart: Visualize demand predictions using Chart.js
+
+#### Technologies
+*   **React 18:** Component-based UI framework
+*   **Axios:** HTTP client for API calls
+*   **Chart.js:** Data visualization library
+*   **TailwindCSS:** Responsive styling
+
+#### Data Flow
+```
+User Selects Product
+    ↓
+handleProductChange() triggered
+    ↓
+setSelectedProductId() updates state
+    ↓
+useEffect() detects change
+    ↓
+Fetch /product-summary/{id} → Update metrics
+Fetch /forecast/{id} → Update chart
+    ↓
+Component re-renders with new data
+```
+
+### 2. Backend API Layer (FastAPI)
+
+#### Purpose
+Serves as the central hub for business logic, data retrieval, and AI model execution.
+
+#### Architecture Pattern
+**Asynchronous Request Handling**
+*   Uses `async/await` for non-blocking operations
+*   Runs CPU-intensive tasks in thread pools to prevent server freezing
+*   Enables concurrent request handling
+
+#### Core Endpoints
+
+**GET /products**
+*   Returns list of all available products
+*   Queries PRODUCTS table from Snowflake
+*   Converts column names to lowercase for consistency
+*   Response time: <100ms
+
+**GET /product-summary/{product_id}**
+*   Calculates summary metrics for a specific product
+*   Queries three tables: SALES, INVENTORY
+*   Aggregates: SUM(REVENUE), COUNT(SALES), SUM(QUANTITY_ON_HAND)
+*   Response time: <500ms
+
+**GET /forecast/{product_id}**
+*   Generates 30-day demand forecast using Auto-ARIMA
+*   Asynchronously runs CPU-intensive model
+*   Returns forecast with dates and predicted values
+*   Response time: 30-60 seconds (model computation)
+
+#### Middleware
+
+**CORS (Cross-Origin Resource Sharing)**
+```python
+CORSMiddleware(
+    allow_origins=["http://localhost:3000"],
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+```
+Enables frontend to communicate with backend despite different ports.
+
+#### Error Handling
+*   Graceful exception catching in all endpoints
+*   Returns empty data structures on failure
+*   Logs errors for debugging
+
+### 3. Data Access Layer
+
+#### SnowflakeConnector Class
+
+**Responsibilities**
+*   Manages Snowflake database connections
+*   Executes SQL queries
+*   Converts results to Pandas DataFrames
+*   Handles column name transformations
+
+**Key Methods**
+
+```python
+execute_query(query: str) -> pd.DataFrame
+    - Executes arbitrary SQL query
+    - Returns results as DataFrame
+    - Uses fetch_pandas_all() for efficient data transfer
+
+get_sales_by_product(product_id: int) -> pd.DataFrame
+    - Retrieves historical sales data for a product
+    - Renames columns: SALE_DATE → ds, QUANTITY → y
+    - Prepares data for AI model consumption
+```
+
+**Connection Management**
+*   Singleton pattern ensures single connection
+*   Connection pooling for efficiency
+*   Graceful connection closing
+
+#### Database Schema
+
+**PRODUCTS Table**
+```sql
+PRODUCT_ID (INTEGER, PRIMARY KEY)
+PRODUCT_NAME (VARCHAR)
+```
+
+**SALES Table**
+```sql
+SALE_ID (INTEGER, PRIMARY KEY)
+PRODUCT_ID (INTEGER, FOREIGN KEY)
+SALE_DATE (DATE)
+QUANTITY (INTEGER)
+REVENUE (DECIMAL)
+```
+
+**INVENTORY Table**
+```sql
+PRODUCT_ID (INTEGER, PRIMARY KEY)
+QUANTITY_ON_HAND (INTEGER)
+```
+
+### 4. AI/ML Layer
+
+#### DemandForecaster Class
+
+**Algorithm: Auto-ARIMA**
+
+Auto-ARIMA (AutoRegressive Integrated Moving Average) is a statistical method that automatically discovers the optimal parameters for time-series forecasting.
+
+**How It Works**
+
+1.  **Data Preparation**
+    *   Aggregates daily sales from transaction-level data
+    *   Handles missing dates with zero sales
+    *   Converts dates to ordinal numbers for model compatibility
+
+2.  **Parameter Search**
+    *   Tests multiple ARIMA configurations
+    *   Evaluates each using AIC (Akaike Information Criterion)
+    *   Selects model with lowest AIC score
+    *   Limited to 10 iterations for performance
+
+3.  **Forecast Generation**
+    *   Uses selected model to predict 30 days ahead
+    *   Generates point estimates and confidence intervals
+    *   Formats output for frontend visualization
+
+**Model Configuration**
+```python
+order = (1, 1, 1)              # Non-seasonal parameters
+seasonal_order = (1, 1, 0, 7)  # Seasonal parameters (weekly)
+n_jobs = 1                      # Single-threaded execution
+n_fits = 10                     # Max models to test
+```
+
+**Advantages of Auto-ARIMA**
+*   Automatically adapts to each product's unique pattern
+*   Captures seasonality (e.g., weekly demand cycles)
+*   Identifies trends in historical data
+*   Statistically rigorous approach
+*   Industry-standard method
+
+**Performance Characteristics**
+*   Computation time: 30-60 seconds per product
+*   Accuracy: High for products with sufficient historical data
+*   Scalability: Linear with data volume
+
+### 5. Asynchronous Processing
+
+#### Thread Pool Execution
+
+The backend uses Python's `asyncio` with `run_in_executor` to prevent blocking:
+
+```python
+loop = asyncio.get_running_loop()
+sales_df = await loop.run_in_executor(
+    None,  # Use default ThreadPoolExecutor
+    db_connector.get_sales_by_product,
+    product_id
+)
+```
+
+**Benefits**
+*   Server remains responsive during long computations
+*   Multiple requests can be processed concurrently
+*   Prevents timeout errors
+*   Improves user experience
+
+## Data Flow Diagrams
+
+### Complete Request Flow
+
+```
+User Action: Select Product
+    ↓
+Frontend: handleProductChange()
+    ↓
+Frontend: setSelectedProductId(newId)
+    ↓
+Frontend: useEffect() triggered
+    ├─→ Axios GET /product-summary/{id}
+    │   ├─→ Backend: Query SALES, INVENTORY tables
+    │   ├─→ Calculate aggregates
+    │   └─→ Return JSON response
+    │
+    └─→ Axios GET /forecast/{id}
+        ├─→ Backend: Query SALES table for product
+        ├─→ Prepare data (rename columns)
+        ├─→ Run Auto-ARIMA model (async)
+        ├─→ Generate 30-day forecast
+        └─→ Return JSON response
+    ↓
+Frontend: Update state with new data
+    ↓
+Frontend: Re-render components
+    ↓
+User: Sees updated metrics and chart
+```
+
+### Forecast Generation Flow
+
+```
+Forecast Request Received
+    ↓
+Get Sales History
+    ↓
+Aggregate to Daily Level
+    ↓
+Auto-ARIMA Parameter Search
+    ├─→ Test Model 1: ARIMA(1,1,1)
+    ├─→ Test Model 2: ARIMA(1,1,2)
+    ├─→ Test Model 3: ARIMA(2,1,1)
+    └─→ ... (up to 10 models)
+    ↓
+Select Best Model (lowest AIC)
+    ↓
+Generate 30-Day Forecast
+    ↓
+Format Results
+    ↓
+Return to Frontend
+```
+
+## Scalability Considerations
+
+### Current Limitations
+*   Single-threaded AI model (by design, to prevent deadlocks)
+*   No caching layer
+*   No forecast pre-computation
+*   All computation on-demand
+
+### Scaling Strategies
+
+**Short-term (Easy)**
+1.  Add Redis caching for frequently requested products
+2.  Pre-compute forecasts during off-peak hours
+3.  Implement request queuing for high-traffic periods
+
+**Medium-term (Moderate)**
+1.  Separate AI model into microservice
+2.  Deploy on GPU-enabled infrastructure
+3.  Implement distributed caching
+
+**Long-term (Complex)**
+1.  Multi-model ensemble forecasting
+2.  Real-time data streaming pipeline
+3.  Cloud-native deployment (Kubernetes)
+
+## Security Considerations
+
+### Current Implementation
+*   CORS restricted to localhost
+*   No authentication/authorization
+*   Environment variables for credentials
+*   SQL queries use parameterized inputs
+
+### Production Recommendations
+*   Implement OAuth2 authentication
+*   Add role-based access control (RBAC)
+*   Use API keys for service-to-service communication
+*   Implement rate limiting
+*   Add request validation and sanitization
+*   Use HTTPS/TLS for all communications
+*   Implement audit logging
+
+## Deployment Architecture
+
+### Development Environment
+```
+Local Machine
+├── Frontend: npm start (port 3000)
+├── Backend: python run.py (port 8000)
+└── Database: Snowflake (cloud)
+```
+
+### Production Environment (Recommended)
+```
+Cloud Infrastructure (AWS/GCP/Azure)
+├── Frontend
+│   ├── Static hosting (S3/CloudStorage)
+│   └── CDN for distribution
+├── Backend
+│   ├── Container (Docker)
+│   ├── Orchestration (Kubernetes)
+│   └── Load balancer
+├── Cache Layer (Redis)
+├── Message Queue (RabbitMQ/Kafka)
+└── Database (Snowflake)
+```
+
+## Technology Rationale
+
+### Why FastAPI?
+*   Built-in async/await support
+*   Automatic API documentation (Swagger)
+*   High performance (near-C speed)
+*   Type hints for validation
+*   Easy to test
+
+### Why React?
+*   Component reusability
+*   Virtual DOM for performance
+*   Large ecosystem
+*   Strong community support
+*   Easy state management
+
+### Why Snowflake?
+*   Cloud-native data warehouse
+*   Scalable query performance
+*   Built-in Python support
+*   Separation of compute and storage
+*   Enterprise-grade security
+
+### Why Auto-ARIMA?
+*   Automatically discovers optimal parameters
+*   Handles seasonality
+*   Statistically rigorous
+*   Industry standard
+*   Well-documented
+
+## Monitoring and Observability
+
+### Current Logging
+*   Backend prints forecast progress to console
+*   Frontend logs API errors to browser console
+*   Uvicorn logs all HTTP requests
+
+### Production Monitoring (Recommended)
+*   Application Performance Monitoring (APM)
+*   Distributed tracing (Jaeger/Zipkin)
+*   Log aggregation (ELK stack)
+*   Metrics collection (Prometheus)
+*   Alerting (PagerDuty/Opsgenie)
+
+---
+
+**Architecture Version:** 1.0  
+**Last Updated:** February 2026

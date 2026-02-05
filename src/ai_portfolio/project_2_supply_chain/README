@@ -1,0 +1,276 @@
+# Supply Chain Optimization Dashboard
+
+A sophisticated, full-stack web application that leverages artificial intelligence to provide real-time supply chain analytics and 30-day demand forecasting. This project demonstrates modern web development practices, advanced data science techniques, and seamless integration between frontend and backend systems.
+
+## Overview
+
+The Supply Chain Optimization Dashboard is designed to help businesses make data-driven decisions about inventory management and demand planning. By combining real-time sales data with machine learning forecasting, the application provides actionable insights into product demand patterns and supply chain metrics.
+
+### Key Features
+
+*   **Interactive Product Selection:** Browse and select from a comprehensive product catalog with instant metric updates.
+*   **Real-Time Metrics:** View critical supply chain KPIs including total revenue, transaction volume, and current inventory levels for each product.
+*   **AI-Powered Forecasting:** Automatic generation of 30-day demand forecasts using sophisticated Auto-ARIMA time-series modeling.
+*   **Dynamic Visualization:** Interactive charts that display forecasted demand trends with responsive, real-time updates.
+*   **Responsive Design:** Professional, clean user interface that works seamlessly across different screen sizes.
+
+## Technology Stack
+
+### Frontend
+
+*   **React 18:** Modern JavaScript library for building interactive user interfaces.
+*   **Axios:** Promise-based HTTP client for seamless API communication.
+*   **Chart.js:** Powerful charting library for beautiful, interactive data visualizations.
+*   **TailwindCSS:** Utility-first CSS framework for rapid, responsive UI development.
+*   **Vite:** Lightning-fast build tool and development server.
+
+### Backend
+
+*   **Python 3.11:** Core programming language for backend logic.
+*   **FastAPI:** Modern, high-performance web framework for building APIs.
+*   **Uvicorn:** ASGI web server for running the FastAPI application.
+*   **Snowflake:** Enterprise data warehouse for storing and querying sales data.
+*   **Pandas:** Data manipulation and analysis library.
+*   **PMDarima:** Statistical library providing Auto-ARIMA functionality for time-series forecasting.
+*   **Statsmodels:** Advanced statistical modeling library.
+
+## Project Structure
+
+```
+project_2_supply_chain/
+├── frontend/                    # React application
+│   ├── src/
+│   │   ├── App.js              # Main application component
+│   │   ├── App.css             # Application styling
+│   │   └── index.js            # React entry point
+│   ├── package.json            # Frontend dependencies
+│   └── vite.config.js          # Vite configuration
+├── src/                         # Python backend
+│   ├── main.py                 # FastAPI application and endpoints
+│   ├── snowflake_connector.py  # Database connection and queries
+│   ├── train_model.py          # AI forecasting model
+│   └── requirements.txt        # Python dependencies
+├── run.py                       # Backend server entry point
+├── venv/                        # Python virtual environment
+└── README.md                    # This file
+```
+
+## Installation and Setup
+
+### Prerequisites
+
+*   Python 3.11 or higher
+*   Node.js 22.13.0 or higher
+*   Snowflake account with appropriate credentials
+*   Git for version control
+
+### Backend Setup
+
+1.  **Create and activate a virtual environment:**
+    ```bash
+    python3.11 -m venv venv
+    source venv/bin/activate  # On macOS/Linux
+    # or
+    venv\Scripts\activate  # On Windows
+    ```
+
+2.  **Install Python dependencies:**
+    ```bash
+    pip install -r src/requirements.txt
+    pip install "snowflake-connector-python[pandas]"
+    pip install pmdarima statsmodels
+    ```
+
+3.  **Set up environment variables:**
+    Create a `.env` file in the project root with your Snowflake credentials:
+    ```
+    SNOWFLAKE_USER=your_username
+    SNOWFLAKE_PASSWORD=your_password
+    SNOWFLAKE_ACCOUNT=your_account_id
+    SNOWFLAKE_WAREHOUSE=your_warehouse
+    SNOWFLAKE_DATABASE=your_database
+    SNOWFLAKE_SCHEMA=your_schema
+    ```
+
+4.  **Start the backend server:**
+    ```bash
+    python run.py
+    ```
+    The backend will be available at `http://localhost:8000`.
+
+### Frontend Setup
+
+1.  **Navigate to the frontend directory:**
+    ```bash
+    cd frontend
+    ```
+
+2.  **Install Node dependencies:**
+    ```bash
+    npm install
+    ```
+
+3.  **Start the development server:**
+    ```bash
+    npm start
+    ```
+    The frontend will be available at `http://localhost:3000`.
+
+## Usage
+
+1.  **Open the Dashboard:** Navigate to `http://localhost:3000` in your web browser.
+2.  **Select a Product:** Use the dropdown menu to choose a product from your catalog.
+3.  **View Metrics:** Observe the summary cards displaying revenue, transactions, and inventory for the selected product.
+4.  **Analyze Forecast:** Wait for the AI model to generate a 30-day demand forecast (typically 30-60 seconds).
+5.  **Interpret Results:** Study the forecast chart to understand predicted demand patterns and make informed inventory decisions.
+
+## API Endpoints
+
+### GET /products
+
+Returns a list of all available products.
+
+**Response:**
+```json
+{
+  "products": [
+    {
+      "product_id": 1,
+      "product_name": "Wireless Mouse"
+    }
+  ]
+}
+```
+
+### GET /product-summary/{product_id}
+
+Returns summary metrics for a specific product.
+
+**Response:**
+```json
+{
+  "total_revenue": 24324983.69,
+  "total_transactions": 1122,
+  "total_inventory": 3443
+}
+```
+
+### GET /forecast/{product_id}
+
+Generates a 30-day demand forecast for a specific product using Auto-ARIMA.
+
+**Response:**
+```json
+{
+  "product_id": 1,
+  "forecast": [
+    {
+      "ds": "2026-02-06",
+      "yhat": 45.23
+    }
+  ]
+}
+```
+
+## AI Forecasting Model
+
+### Auto-ARIMA Approach
+
+The application uses **Auto-ARIMA (AutoRegressive Integrated Moving Average)** to generate intelligent demand forecasts. This sophisticated statistical model:
+
+*   **Automatically discovers optimal parameters** for each product's unique demand pattern.
+*   **Captures seasonality** such as weekly or monthly demand cycles.
+*   **Identifies trends** in historical sales data.
+*   **Adapts to individual products** rather than applying a one-size-fits-all approach.
+
+### Model Configuration
+
+*   **Seasonal Period:** 7 days (weekly seasonality)
+*   **Max Search Iterations:** 10 models tested
+*   **Threading:** Single-threaded execution to prevent deadlocks
+*   **Forecast Horizon:** 30 days into the future
+
+## Performance Considerations
+
+*   **Forecast Generation Time:** 30-60 seconds per product (depends on data volume and system specifications)
+*   **Database Query Time:** <1 second for typical product queries
+*   **Frontend Response Time:** <100ms for UI updates
+
+The forecast generation time is a direct result of the computational complexity of the Auto-ARIMA algorithm. For production deployments, consider:
+*   Pre-calculating forecasts during off-peak hours
+*   Implementing caching for frequently requested products
+*   Deploying on higher-performance infrastructure
+
+## Development Workflow
+
+### Making Changes to the Backend
+
+1.  Edit files in the `src/` directory.
+2.  The Uvicorn server will automatically reload (thanks to the `reload=True` setting).
+3.  Test your changes by making API requests.
+
+### Making Changes to the Frontend
+
+1.  Edit files in the `frontend/src/` directory.
+2.  The Vite development server will automatically refresh the browser.
+3.  Check the browser console for any errors.
+
+## Troubleshooting
+
+### Backend Won't Start
+
+*   Ensure all Python dependencies are installed: `pip install -r src/requirements.txt`
+*   Verify Snowflake credentials in your `.env` file
+*   Check that port 8000 is not already in use
+
+### Frontend Won't Connect to Backend
+
+*   Ensure the backend server is running on `http://localhost:8000`
+*   Check browser console for CORS errors
+*   Verify that both servers are running in separate terminals
+
+### Forecast Takes Too Long
+
+*   This is normal behavior for the Auto-ARIMA algorithm
+*   Consider reducing the `n_fits` parameter in `train_model.py` for faster (but potentially less accurate) results
+*   Upgrade your system's CPU for better performance
+
+### Database Connection Fails
+
+*   Verify Snowflake credentials are correct
+*   Ensure your Snowflake account is active and accessible
+*   Check that the specified warehouse and database exist
+
+## Future Enhancements
+
+*   **Caching Layer:** Implement Redis to cache frequently requested forecasts
+*   **Batch Processing:** Pre-calculate forecasts for all products during off-peak hours
+*   **Advanced Visualizations:** Add more chart types and interactive filters
+*   **User Authentication:** Implement role-based access control
+*   **Mobile Optimization:** Create a mobile-friendly version of the dashboard
+*   **Forecast Comparison:** Display multiple forecasting models side-by-side
+*   **Alert System:** Notify users of unusual demand patterns or inventory issues
+*   **Export Functionality:** Allow users to download forecasts and reports
+
+## Contributing
+
+This is a portfolio project demonstrating full-stack development capabilities. For contributions or improvements, please follow these guidelines:
+
+1.  Create a new branch for your feature
+2.  Make your changes with clear, descriptive commit messages
+3.  Test thoroughly before submitting
+4.  Update documentation as needed
+
+## License
+
+This project is provided as-is for educational and portfolio purposes.
+
+## Contact and Support
+
+For questions, suggestions, or feedback about this project, please reach out through your preferred contact method.
+
+---
+
+**Project Status:** Complete and functional. Performance optimizations ongoing.
+
+**Last Updated:** February 2026

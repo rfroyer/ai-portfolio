@@ -1,0 +1,476 @@
+# Project Scope
+
+## Project Overview
+
+The Supply Chain Optimization Dashboard is a full-stack web application designed to provide supply chain professionals with real-time analytics and AI-powered demand forecasting capabilities. The project demonstrates advanced skills in full-stack development, data science, and system architecture.
+
+## Project Objectives
+
+### Primary Objectives
+
+1. **Demonstrate Full-Stack Development Capability**
+   - Build a production-quality web application from scratch
+   - Integrate frontend, backend, and database systems
+   - Implement best practices in software architecture
+
+2. **Implement Advanced AI/ML Capabilities**
+   - Deploy sophisticated time-series forecasting model
+   - Automatically adapt model parameters to individual products
+   - Generate accurate 30-day demand predictions
+
+3. **Create Professional User Experience**
+   - Build intuitive, responsive user interface
+   - Provide real-time data updates
+   - Display insights in clear, actionable format
+
+4. **Showcase System Design Skills**
+   - Design scalable architecture
+   - Implement asynchronous processing
+   - Handle complex data workflows
+
+## In-Scope Features
+
+### Core Functionality
+
+#### 1. Product Management
+- **Display Product Catalog**
+  - Fetch list of all available products from database
+  - Display products in dropdown selector
+  - Support product selection and switching
+  - Show product ID and name
+
+#### 2. Supply Chain Metrics
+- **Summary Metrics Display**
+  - Total Revenue: Sum of all sales revenue for selected product
+  - Total Transactions: Count of sales transactions for selected product
+  - Current Inventory: Total quantity on hand for selected product
+  - Update metrics instantly when product is selected
+  - Format numbers with appropriate currency and thousand separators
+
+#### 3. Demand Forecasting
+- **30-Day Forecast Generation**
+  - Retrieve historical sales data for selected product
+  - Train Auto-ARIMA model on historical data
+  - Generate 30-day demand forecast
+  - Return forecast with dates and predicted quantities
+  - Display forecast in interactive chart
+
+#### 4. Data Visualization
+- **Interactive Chart**
+  - Display forecast as line chart
+  - Show date labels on x-axis
+  - Show predicted demand on y-axis
+  - Responsive chart sizing
+  - Professional styling and formatting
+
+#### 5. User Interface
+- **Dashboard Layout**
+  - Header with application title
+  - Summary cards for key metrics
+  - Product selector dropdown
+  - Forecast chart area
+  - Footer with copyright information
+- **Responsive Design**
+  - Works on desktop browsers
+  - Adapts to different screen sizes
+  - Professional, clean appearance
+
+### Technical Features
+
+#### Backend
+- RESTful API with three endpoints
+- Asynchronous request handling
+- Database connectivity and query execution
+- Error handling and graceful degradation
+- CORS support for frontend communication
+
+#### Frontend
+- React component-based architecture
+- State management with hooks
+- Axios for HTTP communication
+- Chart.js for data visualization
+- TailwindCSS for styling
+
+#### Database
+- Snowflake data warehouse integration
+- SQL query execution
+- Data transformation and aggregation
+- Connection pooling
+
+#### AI/ML
+- Auto-ARIMA time-series forecasting
+- Automatic parameter optimization
+- Seasonal pattern detection
+- Trend analysis
+
+## Out-of-Scope Features
+
+### Features Explicitly Not Included
+
+#### User Management
+- User authentication and authorization
+- Role-based access control
+- User profiles and preferences
+- Login/logout functionality
+- Multi-user collaboration
+
+#### Advanced Analytics
+- Predictive inventory optimization
+- Automated reorder point calculation
+- Supplier performance analysis
+- Demand clustering
+- Anomaly detection
+
+#### Data Management
+- Data import/export functionality
+- Batch data uploads
+- Data validation and cleansing
+- Historical data archival
+- Data backup and recovery
+
+#### Reporting
+- Custom report generation
+- Scheduled report delivery
+- Report templates
+- Export to PDF/Excel
+- Email notifications
+
+#### Integration
+- Integration with ERP systems
+- API for third-party applications
+- Webhook support
+- Real-time data streaming
+- Message queue integration
+
+#### Mobile
+- Mobile application
+- Mobile-responsive design (beyond basic responsiveness)
+- Native iOS/Android apps
+- Progressive web app (PWA)
+
+#### Advanced Features
+- Multi-product comparison
+- Forecast accuracy metrics
+- Model performance tracking
+- A/B testing different models
+- Ensemble forecasting
+- Machine learning model retraining
+- Hyperparameter tuning UI
+- Forecast confidence intervals visualization
+
+#### Deployment
+- Containerization (Docker)
+- Orchestration (Kubernetes)
+- CI/CD pipeline
+- Infrastructure as Code
+- Cloud deployment automation
+- Load balancing
+- Auto-scaling
+
+## Functional Requirements
+
+### FR1: Product Selection
+- **Description:** Users can select a product from a dropdown list
+- **Acceptance Criteria:**
+  - Dropdown displays all available products
+  - Products are sorted by ID
+  - Selection triggers data updates
+  - Selected product persists during session
+
+### FR2: Metrics Display
+- **Description:** System displays supply chain metrics for selected product
+- **Acceptance Criteria:**
+  - Metrics update within 1 second of product selection
+  - Revenue displayed with currency formatting
+  - Transaction count displayed as integer
+  - Inventory displayed as integer
+  - All values are accurate and up-to-date
+
+### FR3: Forecast Generation
+- **Description:** System generates 30-day demand forecast for selected product
+- **Acceptance Criteria:**
+  - Forecast generated within 60 seconds
+  - Forecast includes 30 days of predictions
+  - Each prediction includes date and quantity
+  - Forecast is unique to each product
+  - Forecast adapts to product's demand pattern
+
+### FR4: Chart Visualization
+- **Description:** System displays forecast in interactive chart
+- **Acceptance Criteria:**
+  - Chart displays all 30 forecast points
+  - X-axis shows dates in readable format
+  - Y-axis shows predicted quantities
+  - Chart updates when product is selected
+  - Chart is responsive and readable
+
+### FR5: Error Handling
+- **Description:** System handles errors gracefully
+- **Acceptance Criteria:**
+  - Database errors don't crash application
+  - API errors display user-friendly messages
+  - Missing data displays appropriate fallback
+  - Errors are logged for debugging
+
+## Non-Functional Requirements
+
+### NFR1: Performance
+- **Product List Load:** <100ms
+- **Metrics Query:** <500ms
+- **Forecast Generation:** 30-60 seconds
+- **Chart Rendering:** <1 second
+- **Page Load Time:** <2 seconds
+
+### NFR2: Scalability
+- **Concurrent Users:** Support 10+ concurrent users
+- **Product Catalog:** Support 50+ products
+- **Historical Data:** Support 3+ years of sales data
+- **Forecast Accuracy:** Maintain accuracy with data growth
+
+### NFR3: Availability
+- **Uptime:** 99% availability during business hours
+- **Error Recovery:** Automatic recovery from transient failures
+- **Data Consistency:** Consistent data across all requests
+
+### NFR4: Usability
+- **Learning Curve:** New users can operate dashboard within 5 minutes
+- **Accessibility:** Follow WCAG 2.1 Level AA guidelines
+- **Responsiveness:** UI responds to user actions within 200ms
+
+### NFR5: Security
+- **Credential Management:** Credentials stored securely in environment variables
+- **Data Protection:** Sensitive data not logged or exposed
+- **API Security:** CORS properly configured
+- **Input Validation:** All inputs validated before processing
+
+### NFR6: Maintainability
+- **Code Quality:** Follow PEP 8 for Python, ESLint for JavaScript
+- **Documentation:** All functions documented with docstrings
+- **Testing:** Unit tests for critical functions
+- **Version Control:** All code in Git with clear commit history
+
+## Constraints
+
+### Technical Constraints
+
+1. **Technology Stack**
+   - Frontend: React 18
+   - Backend: Python 3.11 with FastAPI
+   - Database: Snowflake
+   - Forecasting: Auto-ARIMA via PMDarima
+
+2. **Environment**
+   - Development: Local machine with Python and Node.js
+   - Database: Snowflake cloud account
+   - Deployment: Not included in scope
+
+3. **Data**
+   - Historical data: 3 years of sales transactions
+   - Forecast horizon: 30 days
+   - Update frequency: Real-time queries (no caching)
+
+### Organizational Constraints
+
+1. **Timeline**
+   - Project duration: Ongoing portfolio project
+   - No hard deadline
+   - Continuous improvement expected
+
+2. **Resources**
+   - Single developer
+   - No dedicated QA team
+   - No dedicated DevOps team
+
+3. **Budget**
+   - Snowflake account costs
+   - No additional infrastructure costs
+   - Open-source tools preferred
+
+## Assumptions
+
+### Technical Assumptions
+
+1. **Database Availability**
+   - Snowflake account is always available
+   - Network connectivity is stable
+   - Database credentials are valid and secure
+
+2. **Data Quality**
+   - Historical sales data is accurate and complete
+   - No significant data gaps
+   - Product IDs are unique and stable
+
+3. **Browser Compatibility**
+   - Modern browsers (Chrome, Firefox, Safari, Edge)
+   - JavaScript enabled
+   - ES6+ support
+
+### Business Assumptions
+
+1. **User Base**
+   - Primary users are supply chain professionals
+   - Users have basic technical proficiency
+   - Users understand supply chain concepts
+
+2. **Data Usage**
+   - Forecast data is used for planning, not real-time decisions
+   - 30-day forecast horizon is appropriate
+   - Weekly seasonality is the primary pattern
+
+## Success Criteria
+
+### Technical Success Criteria
+
+- [ ] All API endpoints respond correctly
+- [ ] Frontend communicates with backend successfully
+- [ ] Database queries return accurate data
+- [ ] Forecast model generates predictions for all products
+- [ ] No unhandled exceptions in production
+- [ ] Code follows established standards
+- [ ] Documentation is complete and accurate
+
+### Functional Success Criteria
+
+- [ ] Users can select products from dropdown
+- [ ] Metrics display correctly for each product
+- [ ] Forecasts are generated within 60 seconds
+- [ ] Charts display forecast data accurately
+- [ ] All features work as designed
+
+### User Experience Success Criteria
+
+- [ ] Dashboard loads quickly
+- [ ] Interface is intuitive and easy to use
+- [ ] Data updates are responsive
+- [ ] Error messages are clear and helpful
+- [ ] No confusing or unexpected behavior
+
+### Performance Success Criteria
+
+- [ ] Page load time <2 seconds
+- [ ] Metrics update <1 second
+- [ ] Forecast generation <60 seconds
+- [ ] No performance degradation with data growth
+
+## Deliverables
+
+### Code Deliverables
+- [ ] Frontend React application
+- [ ] Backend FastAPI application
+- [ ] Database connection module
+- [ ] AI forecasting module
+- [ ] Configuration files
+
+### Documentation Deliverables
+- [ ] README.md
+- [ ] ARCHITECTURE.md
+- [ ] GOVERNANCE.md
+- [ ] IMPLEMENTATION.md
+- [ ] SCOPE.md (this document)
+- [ ] STRATEGY.md
+- [ ] Inline code documentation
+- [ ] API documentation
+
+### Testing Deliverables
+- [ ] Unit tests for critical functions
+- [ ] Integration tests for API endpoints
+- [ ] Manual testing checklist
+- [ ] Performance test results
+
+### Deployment Deliverables
+- [ ] Setup instructions
+- [ ] Environment configuration template
+- [ ] Troubleshooting guide
+- [ ] Maintenance procedures
+
+## Risk Assessment
+
+### High-Risk Items
+
+1. **AI Model Performance**
+   - **Risk:** Forecast accuracy may be poor for certain products
+   - **Mitigation:** Validate model on diverse product types
+   - **Impact:** Reduced user trust in forecasts
+
+2. **Performance Issues**
+   - **Risk:** Forecast generation takes too long
+   - **Mitigation:** Optimize model parameters and caching
+   - **Impact:** Poor user experience
+
+3. **Data Quality**
+   - **Risk:** Historical data may have gaps or errors
+   - **Mitigation:** Validate data before model training
+   - **Impact:** Inaccurate forecasts
+
+### Medium-Risk Items
+
+1. **Scalability**
+   - **Risk:** System may not scale to large product catalogs
+   - **Mitigation:** Plan for caching and optimization
+   - **Impact:** Performance degradation
+
+2. **Database Connectivity**
+   - **Risk:** Snowflake connection may fail
+   - **Mitigation:** Implement error handling and retries
+   - **Impact:** Service unavailability
+
+### Low-Risk Items
+
+1. **Browser Compatibility**
+   - **Risk:** Some browsers may not support features
+   - **Mitigation:** Test on multiple browsers
+   - **Impact:** Limited user base
+
+## Change Management
+
+### Change Request Process
+
+1. Identify need for change
+2. Document change request with rationale
+3. Assess impact on scope and timeline
+4. Obtain approval
+5. Implement change
+6. Update documentation
+7. Test thoroughly
+
+### Scope Creep Prevention
+
+- Maintain clear scope boundaries
+- Document all out-of-scope items
+- Evaluate new requests against project goals
+- Prioritize features based on value
+
+## Acceptance Criteria
+
+### Project Acceptance
+
+The project will be considered complete when:
+
+1. **All Core Features Implemented**
+   - Product selection working
+   - Metrics displaying correctly
+   - Forecasts generating successfully
+   - Charts rendering properly
+
+2. **Quality Standards Met**
+   - Code follows governance standards
+   - Documentation is complete
+   - Tests pass successfully
+   - No critical bugs
+
+3. **Performance Targets Met**
+   - Load times within acceptable range
+   - Forecast generation within 60 seconds
+   - No memory leaks or resource issues
+
+4. **Documentation Complete**
+   - All markdown files complete
+   - Code documented with docstrings
+   - API documented
+   - Setup instructions clear
+
+---
+
+**Scope Version:** 1.0  
+**Last Updated:** February 2026  
+**Status:** Active
